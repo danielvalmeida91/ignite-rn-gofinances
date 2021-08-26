@@ -9,6 +9,7 @@ const { CLIENT_ID } = process.env;
 const { REDIRECT_URI } = process.env;
 
 import * as AuthSession from 'expo-auth-session';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 interface User {
   id: string;
@@ -20,6 +21,7 @@ interface User {
 interface AuthProviderData {
   user: User;
   signInWithGoogle(): Promise<void>;
+  signInWithApple(): Promise<void>;
 }
 
 interface AuthorizationResponse {
@@ -67,11 +69,38 @@ function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  async function signInWithApple() {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ]
+      });
+
+      if (credential) {
+        const userLogged = {
+          id: String(credential.user),
+          email: credential.email!,
+          name: credential.fullName!.givenName!,
+          photo: undefined,
+        }
+        setUser(userLogged);
+      }
+
+
+    } catch (error) {
+      throw new Error(error);
+
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
         user,
-        signInWithGoogle
+        signInWithGoogle,
+        signInWithApple
       }}>
       {children}
     </AuthContext.Provider>
